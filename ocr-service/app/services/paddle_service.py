@@ -49,17 +49,38 @@ def run_paddle_ocr(image_base64: str) -> List[OCRToken]:
         return []
         
     tokens = []
-    if not results or not results[0]:
+    if not results:
         return tokens
         
-    for res in results[0]:
-        if not res:
-            continue
-        box = res[0]
-        text_data = res[1]
-        text = text_data[0]
-        confidence = float(text_data[1])
+    # Robust helper to find detections recursively
+    def is_detection(item):
+        if isinstance(item, list) and len(item) == 2:
+            box, text_data = item
+            if isinstance(box, list) and len(box) == 4 and isinstance(text_data, (list, tuple)) and len(text_data) == 2:
+                if isinstance(text_data[0], str) and isinstance(text_data[1], (float, int)):
+                    return True
+        return False
+
+    detections = []
+    def extract_detections(data):
+        if is_detection(data):
+            detections.append(data)
+        elif isinstance(data, list) or isinstance(data, tuple):
+            for item in data:
+                extract_detections(item)
+
+    extract_detections(results)
         
+    for box, text_data in detections:
+        # text_data may be a tuple/list (text, confidence) or just a string
+        if isinstance(text_data, (list, tuple)) and len(text_data) == 2:
+            text = text_data[0]
+            confidence = float(text_data[1])
+        else:
+            # Fallback: treat as plain text with max confidence
+            text = str(text_data)
+            confidence = 1.0
+
         # Filter low confidence
         if confidence < 0.5:
             continue
