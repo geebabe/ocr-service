@@ -8,3 +8,6 @@ RUN pip install --no-cache-dir --upgrade transformers && \
 # Monkey-patch vLLM tokenizer logic to work with transformers>=4.51.0
 # The 'all_special_tokens_extended' attribute was removed in newer transformers.
 RUN sed -i 's/all_special_tokens_extended/all_special_tokens/g' /usr/local/lib/python3.12/dist-packages/vllm/transformers_utils/tokenizer.py || true
+
+# Monkey-patch vLLM Transformers fallback to handle Qwen3-VL missing vocab_size
+RUN sed -i 's/config.vocab_size/getattr(config, "vocab_size", getattr(getattr(config, "text_config", config), "vocab_size", 152064))/g' /usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/transformers.py || true
