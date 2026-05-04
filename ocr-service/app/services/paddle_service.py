@@ -7,10 +7,14 @@ from typing import List, Tuple
 import unicodedata
 from app.core.logger import logger
 
+import os
+os.environ['PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT'] = '0'
+os.environ['FLAGS_use_mkldnn'] = 'False'
+
 # Initialize globally
 try:
     from paddleocr import PaddleOCR
-    ocr = PaddleOCR(use_angle_cls=True, lang="vi", use_mkldnn=False, enable_mkldnn=False)
+    ocr = PaddleOCR(use_angle_cls=True, lang="vi")
 except Exception as e:
     logger.error(f"Failed to initialize PaddleOCR: {e}")
     ocr = None
