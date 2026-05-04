@@ -16,7 +16,7 @@ services:
       - ocr-network
 
   qwen-vlm:
-    image: vllm/vllm-openai:v0.6.0
+    image: vllm/vllm-openai:latest
     command: >
       --model Qwen/Qwen3-VL-2B-Instruct
       --max-model-len 4096
