@@ -41,14 +41,15 @@ Trả về JSON theo đúng format:
 
 Chỉ trả về JSON thuần, không giải thích."""
 
-async def call_vllm_inference(image_base64: str) -> str:
+async def call_vlm_inference(image_base64: str, model_url: str, model_name: str) -> str:
     """
-    Calls the vLLM server via HTTP asynchronously.
+    Calls a VLM server via HTTP asynchronously.
+    Supports any OpenAI-compatible chat completion endpoint.
     """
     headers = {"Content-Type": "application/json"}
     
     payload = {
-        "model": settings.VLLM_MODEL,
+        "model": model_name,
         "messages": [
             {
                 "role": "system",
@@ -76,12 +77,12 @@ async def call_vllm_inference(image_base64: str) -> str:
     
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(settings.VLLM_URL, json=payload, headers=headers)
+            response = await client.post(model_url, json=payload, headers=headers)
             response.raise_for_status()
             
             result = response.json()
             return result["choices"][0]["message"]["content"]
             
     except Exception as e:
-        logger.error(f"vLLM API call failed: {str(e)}")
+        logger.error(f"VLM API call failed for {model_name} at {model_url}: {str(e)}")
         raise
