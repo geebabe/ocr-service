@@ -9,5 +9,17 @@ RUN pip install --no-cache-dir --upgrade transformers && \
 # The 'all_special_tokens_extended' attribute was removed in newer transformers.
 RUN sed -i 's/all_special_tokens_extended/all_special_tokens/g' /usr/local/lib/python3.12/dist-packages/vllm/transformers_utils/tokenizer.py || true
 
-# Monkey-patch vLLM Transformers fallback to handle Qwen3-VL missing vocab_size
-RUN sed -i 's/config.vocab_size/getattr(config, "vocab_size", getattr(getattr(config, "text_config", config), "vocab_size", 152064))/g' /usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/transformers.py || true
+# Monkey-patch vLLM Transformers fallback to handle Qwen3VLConfig which nests
+# hidden_size, vocab_size, num_attention_heads, etc. under text_config instead
+# of at the top level (vLLM's generic TransformersModel assumes a flat config).
+RUN VLLM_TF=/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/transformers.py && \
+    # Patch vocab_size \
+    sed -i 's/config\.vocab_size/getattr(config, "vocab_size", getattr(getattr(config, "text_config", config), "vocab_size", 152064))/g' $VLLM_TF || true && \
+    # Patch hidden_size \
+    sed -i 's/config\.hidden_size/getattr(config, "hidden_size", getattr(getattr(config, "text_config", config), "hidden_size", 2048))/g' $VLLM_TF || true && \
+    # Patch num_attention_heads \
+    sed -i 's/config\.num_attention_heads/getattr(config, "num_attention_heads", getattr(getattr(config, "text_config", config), "num_attention_heads", 16))/g' $VLLM_TF || true && \
+    # Patch num_hidden_layers \
+    sed -i 's/config\.num_hidden_layers/getattr(config, "num_hidden_layers", getattr(getattr(config, "text_config", config), "num_hidden_layers", 28))/g' $VLLM_TF || true && \
+    # Patch num_key_value_heads \
+    sed -i 's/config\.num_key_value_heads/getattr(config, "num_key_value_heads", getattr(getattr(config, "text_config", config), "num_key_value_heads", 8))/g' $VLLM_TF || true
