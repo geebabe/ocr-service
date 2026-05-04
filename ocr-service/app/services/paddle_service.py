@@ -10,7 +10,7 @@ from app.core.logger import logger
 # Initialize globally
 try:
     from paddleocr import PaddleOCR
-    ocr = PaddleOCR(use_angle_cls=True, lang="vi", show_log=False)
+    ocr = PaddleOCR(use_angle_cls=True, lang="vi")
 except Exception as e:
     logger.error(f"Failed to initialize PaddleOCR: {e}")
     ocr = None
