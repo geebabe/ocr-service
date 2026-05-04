@@ -39,7 +39,7 @@ def run_paddle_ocr(image_base64: str) -> List[OCRToken]:
         
         # Run OCR
         # result format: [[[x1, y1], [x2, y2], [x3, y3], [x4, y4]], ('text', confidence)]
-        results = ocr.ocr(image_np, cls=True)
+        results = ocr.ocr(image_np)
     except Exception as e:
         logger.error(f"Error during PaddleOCR inference: {e}", exc_info=True)
         return []
