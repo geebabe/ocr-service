@@ -3,40 +3,39 @@ from app.core.config import settings
 from app.core.logger import logger
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR. Trích xuất thông tin từ hóa đơn.
-Với mỗi trường, hãy dùng grounding để chỉ rõ vị trí text trên ảnh.
 
-Trả về JSON theo đúng format (bbox là tọa độ [xmin, ymin, xmax, ymax]):
+Trả về JSON theo đúng format:
 
 {
-  "invoice_number": {"value": "...", "bounding_box": [xmin, ymin, xmax, ymax]},
-  "invoice_date":   {"value": "...", "bounding_box": [xmin, ymin, xmax, ymax]},
+  "invoice_number": "...",
+  "invoice_date":   "...",
   "vendor": {
-    "name": {"value": "...", "bounding_box": [...]},
-    "address": {"value": "...", "bounding_box": [...]},
-    "tax_code": {"value": "...", "bounding_box": [...]},
-    "phone": {"value": "...", "bounding_box": [...]}
+    "name": "...",
+    "address": "...",
+    "tax_code": "...",
+    "phone": "..."
   },
   "customer": {
-     "name": {"value": "...", "bounding_box": [...]},
-     "address": {"value": "...", "bounding_box": [...]},
-     "tax_code": {"value": "...", "bounding_box": [...]}
+     "name": "...",
+     "address": "...",
+     "tax_code": "..."
   },
   "items": [
      {
-       "description": {"value": "...", "bounding_box": [...]},
-       "quantity": {"value": "...", "bounding_box": [...]},
-       "unit_price": {"value": "...", "bounding_box": [...]},
-       "total_amount": {"value": "...", "bounding_box": [...]}
+       "description": "...",
+       "quantity": "...",
+       "unit_price": "...",
+       "total_amount": "..."
      }
   ],
-  "subtotal": {"value": "...", "bounding_box": [...]},
-  "tax": {"value": "...", "bounding_box": [...]},
-  "total_amount": {"value": "...", "bounding_box": [...]},
-  "currency": {"value": "...", "bounding_box": [...]},
+  "subtotal": "...",
+  "tax": "...",
+  "total_amount": "...",
+  "currency": "...",
   "payment_info": {
-    "method": {"value": "...", "bounding_box": [...]},
-    "bank_account": {"value": "...", "bounding_box": [...]},
-    "bank_name": {"value": "...", "bounding_box": [...]}
+    "method": "...",
+    "bank_account": "...",
+    "bank_name": "..."
   }
 }
 

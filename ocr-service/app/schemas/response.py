@@ -7,6 +7,8 @@ class BBoxField(BaseModel):
         default=None, 
         description="Bounding box coordinates [xmin, ymin, xmax, ymax] in original image pixels"
     )
+    confidence: Optional[float] = Field(default=None, description="Match confidence score")
+    match_type: Optional[str] = Field(default=None, description="How the bounding box was matched")
 
 class InvoiceItem(BaseModel):
     description: BBoxField = Field(description="Item name or description")

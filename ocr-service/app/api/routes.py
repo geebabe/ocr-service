@@ -6,6 +6,9 @@ from app.services.vllm_client import call_vllm_inference
 from app.services.parser_service import parse_vllm_output
 from app.api.dependencies import get_token_header
 from app.core.logger import logger
+from app.services.paddle_service import run_paddle_ocr
+from app.services.matcher_service import merge_ocr_results
+import asyncio
 
 router = APIRouter()
 
@@ -18,17 +21,22 @@ async def perform_ocr(file: UploadFile = File(...)):
         # 1. Process document (convert PDF to image if necessary, resize, encode to base64)
         image_base64, width, height = await process_document(file)
         
-        # 2. Call vLLM for inference
-        raw_output = await call_vllm_inference(image_base64)
+        # 2. Call vLLM and PaddleOCR concurrently
+        raw_output_task = call_vllm_inference(image_base64)
+        # paddle_service is synchronous right now, but we can run it in a threadpool to not block the event loop
+        ocr_tokens_task = asyncio.to_thread(run_paddle_ocr, image_base64)
         
-        # 3. Parse output and map to Pydantic models
-        parsed_data = parse_vllm_output(raw_output, width, height)
+        raw_output, ocr_tokens = await asyncio.gather(raw_output_task, ocr_tokens_task)
+        
+        # 3. Parse VLLM output and merge with PaddleOCR tokens
+        parsed_dict = parse_vllm_output(raw_output)
+        final_extraction = merge_ocr_results(parsed_dict, ocr_tokens)
         
         latency = round(time.time() - start_time, 2)
         
         return APIResponse(
             success=True,
-            data=parsed_data,
+            data=final_extraction,
             metadata={"latency_seconds": latency, "image_size": f"{width}x{height}"}
         )
         
