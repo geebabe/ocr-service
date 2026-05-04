@@ -27,7 +27,7 @@ services:
       --enforce-eager
       --trust-remote-code
     environment:
-      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_TOKEN
       - VLLM_ATTENTION_BACKEND=FLASH_ATTN
     shm_size: '4gb'
     ports:
