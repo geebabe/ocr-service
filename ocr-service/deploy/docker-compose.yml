@@ -18,17 +18,10 @@ services:
   qwen-vlm:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile.vllm
-    command: >
-      --model Qwen/Qwen3-VL-2B-Instruct
-      --max-model-len 4096
-      --max-num-batched-tokens 2048
-      --gpu-memory-utilization 0.80
-      --enforce-eager
-      --trust-remote-code
+      dockerfile: deploy/Dockerfile.hf
     environment:
       - HF_TOKEN
-      - VLLM_ATTENTION_BACKEND=FLASH_ATTN
+      - MODEL_ID=Qwen/Qwen3-VL-2B-Instruct
     shm_size: '4gb'
     ports:
       - "8001:8000"

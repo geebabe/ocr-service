@@ -1,0 +1,33 @@
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+# Install python and basic dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 python3-pip git wget curl libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/python3.10 /usr/bin/python
+
+# Install PyTorch
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Install inference dependencies
+RUN pip install --no-cache-dir \
+    "transformers>=4.51.0" \
+    "accelerate>=0.30.0" \
+    "bitsandbytes>=0.43.0" \
+    Pillow \
+    qwen-vl-utils \
+    sentencepiece \
+    einops \
+    timm \
+    fastapi \
+    uvicorn \
+    pydantic
+
+# Attempt to install flash-attn for speedup (optional)
+RUN pip install --no-cache-dir flash-attn --no-build-isolation || true
+
+WORKDIR /app
+COPY deploy/hf_api_server.py /app/hf_api_server.py
+
+CMD ["uvicorn", "hf_api_server:app", "--host", "0.0.0.0", "--port", "8000"]
