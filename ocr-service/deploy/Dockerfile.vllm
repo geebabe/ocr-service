@@ -13,12 +13,8 @@ RUN sed -i 's/all_special_tokens_extended/all_special_tokens/g' /usr/local/lib/p
 # hidden_size, vocab_size, num_attention_heads, etc. under text_config instead
 # of at the top level (vLLM's generic TransformersModel assumes a flat config).
 RUN VLLM_TF=/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/transformers.py && \
-    python3 -c '
-import re, sys
-path = sys.argv[1]
-with open(path, "r") as f: content = f.read()
-for attr, default in [("vocab_size", 152064), ("hidden_size", 2048), ("num_attention_heads", 16), ("num_hidden_layers", 28), ("num_key_value_heads", 8)]:
-    content = re.sub(rf"self\.config\.{attr}\b", f"getattr(self.config, \"{attr}\", getattr(getattr(self.config, \"text_config\", self.config), \"{attr}\", {default}))", content)
-    content = re.sub(rf"(?<!\.)config\.{attr}\b", f"getattr(config, \"{attr}\", getattr(getattr(config, \"text_config\", config), \"{attr}\", {default}))", content)
-with open(path, "w") as f: f.write(content)
-' $VLLM_TF || true
+    python3 -c "import re, sys; path = sys.argv[1]; content = open(path).read(); \
+    for a, d in [('vocab_size', 152064), ('hidden_size', 2048), ('num_attention_heads', 16), ('num_hidden_layers', 28), ('num_key_value_heads', 8)]: \
+        content = re.sub(rf'self\.config\.{a}\b', f'getattr(self.config, \"{a}\", getattr(getattr(self.config, \"text_config\", self.config), \"{a}\", {d}))', content); \
+        content = re.sub(rf'(?<!\.)config\.{a}\b', f'getattr(config, \"{a}\", getattr(getattr(config, \"text_config\", config), \"{a}\", {d}))', content); \
+    open(path, 'w').write(content)" $VLLM_TF || true
