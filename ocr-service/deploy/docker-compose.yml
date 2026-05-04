@@ -21,12 +21,13 @@ services:
       --model Qwen/Qwen3-VL-2B-Instruct
       --max-model-len 4096
       --max-num-batched-tokens 2048
-      --gpu-memory-utilization 0.90
+      --gpu-memory-utilization 0.80
       --enforce-eager
       --trust-remote-code
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
       - VLLM_ATTENTION_BACKEND=FLASH_ATTN
+    shm_size: '4gb'
     ports:
       - "8001:8000"
     volumes:
