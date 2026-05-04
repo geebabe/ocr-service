@@ -1,0 +1,30 @@
+# OCR Service specific files to ignore
+ocr-service/sample_qwen3vl.py
+ocr-service/project_description.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Environment
+.env
+.env.local
+.agents/
+
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker_cache/

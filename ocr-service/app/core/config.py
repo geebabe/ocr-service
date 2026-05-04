@@ -1,0 +1,22 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "OCR Inference Service"
+    API_V1_STR: str = "/api/v1"
+    
+    # vLLM Server Settings
+    VLLM_URL: str = "http://qwen-vlm:8000/v1/chat/completions"
+    VLLM_MODEL: str = "Qwen/Qwen3-VL-2B-Instruct"
+    VLLM_MAX_TOKENS: int = 1024
+    VLLM_TEMPERATURE: float = 0.0
+    
+    # Upload Settings
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS: set = {".pdf", ".jpg", ".jpeg", ".png"}
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+settings = Settings()

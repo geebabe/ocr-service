@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies (mupdf needed for fitz)
+RUN apt-get update && apt-get install -y \
+    mupdf mupdf-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# The context will be the parent directory
+COPY app ./app
+
+ENV PYTHONPATH=/
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

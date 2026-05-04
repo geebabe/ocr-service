@@ -1,0 +1,6 @@
+# Optional: Use this Dockerfile if you need to build vLLM with custom dependencies
+# Currently, the docker-compose uses the image directly.
+FROM vllm/vllm-openai:v0.6.0
+
+# Example: Install custom packages
+# RUN pip install flash-attn --no-build-isolation

@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  ocr-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - VLLM_URL=http://qwen-vlm:8000/v1/chat/completions
+    depends_on:
+      qwen-vlm:
+        condition: service_healthy
+    networks:
+      - ocr-network
+
+  qwen-vlm:
+    image: vllm/vllm-openai:v0.6.0
+    command: >
+      --model Qwen/Qwen3-VL-2B-Instruct
+      --max-model-len 4096
+      --max-num-batched-tokens 2048
+      --gpu-memory-utilization 0.90
+      --enforce-eager
+      --trust-remote-code
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - VLLM_ATTENTION_BACKEND=FLASH_ATTN
+    ports:
+      - "8001:8000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ocr-network
+
+networks:
+  ocr-network:
+    driver: bridge
