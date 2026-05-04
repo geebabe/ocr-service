@@ -23,6 +23,10 @@ model = Qwen3VLForConditionalGeneration.from_pretrained(
 processor = AutoProcessor.from_pretrained(MODEL_ID)
 print("Model loaded successfully!")
 
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
 class MessageContent(BaseModel):
     type: str
     text: Optional[str] = None

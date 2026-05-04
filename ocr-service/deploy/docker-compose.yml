@@ -8,17 +8,17 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - VLLM_URL=http://qwen-vlm:8000/v1/chat/completions
+      - VLLM_URL=http://qwen-model:8000/v1/chat/completions
     depends_on:
-      qwen-vlm:
+      qwen-model:
         condition: service_healthy
     networks:
       - ocr-network
 
-  qwen-vlm:
+  qwen-model:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile.hf
+      dockerfile: deploy/Dockerfile.model
     environment:
       - HF_TOKEN
       - MODEL_ID=Qwen/Qwen3-VL-2B-Instruct

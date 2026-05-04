@@ -28,6 +28,6 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir flash-attn --no-build-isolation || true
 
 WORKDIR /app
-COPY deploy/hf_api_server.py /app/hf_api_server.py
+COPY deploy/model_server.py /app/model_server.py
 
-CMD ["uvicorn", "hf_api_server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "model_server:app", "--host", "0.0.0.0", "--port", "8000"]
