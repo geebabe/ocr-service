@@ -4,3 +4,7 @@ FROM vllm/vllm-openai:v0.8.5
 # and ensure flash-attn is available as recommended.
 RUN pip install --no-cache-dir --upgrade transformers && \
     pip install --no-cache-dir --upgrade flash-attn --no-build-isolation || true 
+
+# Monkey-patch vLLM tokenizer logic to work with transformers>=4.51.0
+# The 'all_special_tokens_extended' attribute was removed in newer transformers.
+RUN sed -i 's/all_special_tokens_extended/all_special_tokens/g' /usr/local/lib/python3.12/dist-packages/vllm/transformers_utils/tokenizer.py || true
