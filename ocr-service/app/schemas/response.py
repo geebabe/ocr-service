@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Tuple, Union
+from pydantic import BaseModel, Field, model_validator
+from typing import Optional, List, Tuple, Union, Any
 
 class BBoxField(BaseModel):
     value: Union[str, float, int, None] = Field(description="The extracted text or numeric value")
@@ -7,6 +7,13 @@ class BBoxField(BaseModel):
         default=None, 
         description="Bounding box coordinates [xmin, ymin, xmax, ymax] in original image pixels"
     )
+
+    @model_validator(mode='before')
+    @classmethod
+    def handle_primitives(cls, data: Any) -> Any:
+        if isinstance(data, (str, int, float)) or data is None:
+            return {"value": data}
+        return data
 
 class InvoiceItem(BaseModel):
     description: BBoxField = Field(description="Item name or description")
