@@ -66,7 +66,7 @@ async def call_vllm_inference(image_base64: str) -> str:
                     },
                     {
                         "type": "text",
-                        "text": "Trích xuất thông tin từ hóa đơn này."
+                        "text": "Trích xuất thông tin từ hóa đơn này. Bắt buộc trả về JSON theo đúng format đã yêu cầu. Không thêm bất kỳ giải thích nào."
                     }
                 ]
             }
