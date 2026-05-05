@@ -61,16 +61,19 @@ async def chat_completions(req: ChatRequest):
             if isinstance(msg.content, str):
                 formatted_messages.append({"role": msg.role, "content": msg.content})
             else:
-                # Handle list of dicts (image + text)
+                # msg.content is a list of MessageContent objects or dicts
                 content_list = []
                 for item in msg.content:
-                    if isinstance(item, dict):
-                        if item.get("type") == "text":
-                            content_list.append({"type": "text", "text": item.get("text")})
-                        elif item.get("type") == "image_url":
-                            # Qwen processor expects image as a URL or base64 data URI
-                            image_url = item["image_url"]["url"]
-                            content_list.append({"type": "image", "image": image_url})
+                    # Handle both dicts and Pydantic objects
+                    item_dict = item if isinstance(item, dict) else item.dict()
+                    
+                    if item_dict.get("type") == "text":
+                        content_list.append({"type": "text", "text": item_dict.get("text")})
+                    elif item_dict.get("type") == "image_url":
+                        # Qwen processor expects image as a URL or base64 data URI
+                        image_url = item_dict["image_url"]["url"]
+                        content_list.append({"type": "image", "image": image_url})
+                
                 formatted_messages.append({"role": msg.role, "content": content_list})
 
         # Apply chat template
@@ -93,20 +96,20 @@ async def chat_completions(req: ChatRequest):
         inputs = inputs.to(model.device)
 
         # Generation configs
-        generation_config = model.generation_config
-        generation_config.do_sample = True
-        generation_config.temperature = req.temperature
-        generation_config.top_k = 1
-        generation_config.top_p = req.top_p
-        generation_config.min_p = 0.1
-        # generation_config.best_of = 5 # best_of usually handled by pipeline or specific generate calls
-        generation_config.max_new_tokens = req.max_tokens
-        generation_config.repetition_penalty = req.repetition_penalty
+        # Use a fresh config based on req
+        gen_kwargs = {
+            "max_new_tokens": req.max_tokens,
+            "do_sample": req.temperature > 0,
+        }
+        if req.temperature > 0:
+            gen_kwargs["temperature"] = req.temperature
+            gen_kwargs["top_p"] = req.top_p
+            gen_kwargs["repetition_penalty"] = req.repetition_penalty
 
         with torch.no_grad():
             generated_ids = model.generate(
                 **inputs,
-                generation_config=generation_config
+                **gen_kwargs
             )
 
         generated_ids_trimmed = [
@@ -130,5 +133,7 @@ async def chat_completions(req: ChatRequest):
             ]
         }
     except Exception as e:
+        import traceback
         print(f"Error during inference: {e}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
