@@ -20,7 +20,9 @@ services:
     command: >
       --model Qwen/Qwen3-VL-2B-Instruct
       --max-model-len 8192
-      --gpu-memory-utilization 0.8
+      --gpu-memory-utilization 0.9
+      --max-num-seqs 4
+      --enforce-eager
       --trust-remote-code
     environment:
       - HF_TOKEN
