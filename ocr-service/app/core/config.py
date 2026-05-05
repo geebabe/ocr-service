@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # vLLM Server Settings
     VLLM_URL: str = "http://qwen-vlm:8000/v1/chat/completions"
     VLLM_MODEL: str = "Qwen/Qwen3-VL-2B-Instruct"
-    VLLM_MAX_TOKENS: int = 1024
+    VLLM_MAX_TOKENS: int = 4096
     VLLM_TEMPERATURE: float = 0.0
     
     # Upload Settings
