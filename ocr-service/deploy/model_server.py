@@ -14,14 +14,26 @@ app = FastAPI()
 MODEL_ID = os.getenv("MODEL_ID", "Qwen/Qwen3-VL-2B-Instruct")
 print(f"Loading {MODEL_ID} using HuggingFace Transformers...")
 
-# Load model and processor
+# Load model and processor with optimizations
 model = Qwen3VLForConditionalGeneration.from_pretrained(
     MODEL_ID,
     torch_dtype="auto",
-    device_map="auto"
+    device_map="auto",
+    attn_implementation="flash_attention_2", # Force Flash Attention 2
+    trust_remote_code=True
 )
-processor = AutoProcessor.from_pretrained(MODEL_ID)
-print("Model loaded successfully!")
+
+# Limit visual tokens to speed up inference significantly.
+# Default can be very high, leading to long processing times.
+# 1280*28*28 is approx 1MP, which is usually perfect for OCR.
+min_pixels = 256 * 28 * 28
+max_pixels = 1280 * 28 * 28
+processor = AutoProcessor.from_pretrained(
+    MODEL_ID, 
+    min_pixels=min_pixels, 
+    max_pixels=max_pixels
+)
+print(f"Model {MODEL_ID} loaded successfully with Flash Attention 2!")
 
 @app.get("/health")
 async def health():
@@ -82,6 +94,9 @@ async def chat_completions(req: ChatRequest):
         )
         inputs = inputs.to(model.device)
 
+        import time
+        start_time = time.time()
+        
         with torch.no_grad():
             generated_ids = model.generate(
                 **inputs,
@@ -90,6 +105,9 @@ async def chat_completions(req: ChatRequest):
                 temperature=req.temperature if req.temperature > 0 else None
             )
 
+        end_time = time.time()
+        inference_duration = end_time - start_time
+        
         generated_ids_trimmed = [
             out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
         ]
@@ -99,6 +117,10 @@ async def chat_completions(req: ChatRequest):
             skip_special_tokens=False,
             clean_up_tokenization_spaces=False
         )[0]
+
+        print(f"Inference completed in {inference_duration:.2f}s. "
+              f"Input tokens: {inputs.input_ids.shape[1]}, "
+              f"Output tokens: {len(generated_ids_trimmed[0])}")
 
         return {
             "choices": [

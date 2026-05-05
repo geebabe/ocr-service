@@ -16,12 +16,14 @@ services:
       - ocr-network
 
   qwen-model:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.model
+    image: vllm/vllm-openai:latest
+    command: >
+      --model Qwen/Qwen3-VL-2B-Instruct
+      --max-model-len 8192
+      --gpu-memory-utilization 0.8
+      --trust-remote-code
     environment:
       - HF_TOKEN
-      - MODEL_ID=Qwen/Qwen3-VL-2B-Instruct
     shm_size: '4gb'
     ports:
       - "8001:8000"
