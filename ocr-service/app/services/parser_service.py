@@ -1,5 +1,6 @@
 import json
 import re
+import ast
 from typing import Dict, Any, List, Optional, Tuple
 from app.schemas.response import InvoiceExtraction
 from app.core.logger import logger
@@ -100,38 +101,56 @@ def _process_node(node: Any, img_w: int, img_h: int) -> Any:
 
 def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtraction:
     """
-    Parses the JSON output from Qwen3-VL, extracting bounding boxes and values.
-    Handles the case where Qwen outputs native <|box_start|> tags instead of a JSON list.
+    Parses the JSON/Dict output from Qwen3-VL, extracting bounding boxes and values.
+    Handles both proper JSON and Python-like dictionary strings (single quotes, None).
     """
     try:
-        logger.error(f"RAW VLM OUTPUT:\n{output_text}\n---")
+        logger.info(f"RAW VLM OUTPUT:\n{output_text}\n---")
         
-        # 1. Clean the output: extract JSON string
+        # 1. Clean the output: extract anything between the first { and the last }
         json_match = re.search(r"\{.*\}", output_text, re.DOTALL)
         if not json_match:
-            logger.warning("No JSON found in model output")
+            logger.warning("No JSON/Dict block found in model output")
             return InvoiceExtraction()
             
-        raw_json_str = json_match.group()
+        raw_str = json_match.group()
         
-        # Fix invalid JSON if tags are outside quotes: "val" <|box...|> -> "val <|box...|>"
-        fixed_json_str = re.sub(
-            r'"([^"]*?)"\s*(<\|box_start\|>\(\d+,\d+\),\(\d+,\d+\)<\|box_end\|>)',
-            r'"\1 \2"',
-            raw_json_str
-        )
+        # 2. Attempt to parse
+        parsed_dict = None
         
-        parsed_dict = json.loads(fixed_json_str)
+        # Strategy A: Try proper JSON first
+        try:
+            # Fix invalid JSON if tags are outside quotes: "val" <|box...|> -> "val <|box...|>"
+            fixed_json_str = re.sub(
+                r'"([^"]*?)"\s*(<\|box_start\|>\(\d+,\d+\),\(\d+,\d+\)<\|box_end\|>)',
+                r'"\1 \2"',
+                raw_str
+            )
+            parsed_dict = json.loads(fixed_json_str)
+        except json.JSONDecodeError:
+            # Strategy B: If JSON fails, it might be a Python literal (single quotes, None, etc.)
+            try:
+                # ast.literal_eval is safer than eval()
+                parsed_dict = ast.literal_eval(raw_str)
+            except (ValueError, SyntaxError) as e:
+                logger.error(f"Failed both JSON and AST parsing: {str(e)}")
+                # Last ditch effort: replace common Pythonisms and try JSON again
+                try:
+                    cleaned_str = raw_str.replace("'", '"').replace("None", "null").replace("True", "true").replace("False", "false")
+                    parsed_dict = json.loads(cleaned_str)
+                except Exception:
+                    logger.error("Final attempt at JSON parsing failed.")
+                    return InvoiceExtraction()
         
-        # 2. Recursively normalize all bounding boxes and extract string tags
+        if not parsed_dict or not isinstance(parsed_dict, dict):
+            return InvoiceExtraction()
+
+        # 3. Recursively normalize all bounding boxes and extract string tags
         normalized_dict = _process_node(parsed_dict, img_w, img_h)
         
-        # 3. Instantiate Pydantic model
+        # 4. Instantiate Pydantic model
         return InvoiceExtraction(**normalized_dict)
         
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode JSON from model output: {str(e)}\nRaw output: {output_text}")
-        return InvoiceExtraction()
     except Exception as e:
         logger.error(f"Error parsing model output: {str(e)}", exc_info=True)
         return InvoiceExtraction()
