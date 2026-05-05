@@ -103,25 +103,29 @@ def match_value(vlm_value: str, ocr_tokens: List[OCRToken]) -> Tuple[Optional[Tu
         
     return None, 0.0, "no_match"
 
-def process_dict_recursively(node: Any, ocr_tokens: List[OCRToken]) -> Any:
+def process_dict_recursively(node: Any, ocr_tokens: List[OCRToken], key: str = "") -> Any:
     if isinstance(node, dict):
         result = {}
         for k, v in node.items():
             if isinstance(v, str):
                 if v == "..." or not v.strip():
+                    # Check if this field should be a list (like 'items')
+                    if k == "items":
+                        result[k] = []
+                        continue
                     result[k] = {"value": v, "bounding_box": None, "confidence": 0.0, "match_type": "no_match"}
                     continue
                 bbox, conf, mtype = match_value(v, ocr_tokens)
                 result[k] = {"value": v, "bounding_box": bbox, "confidence": conf, "match_type": mtype}
             elif isinstance(v, list):
-                result[k] = process_dict_recursively(v, ocr_tokens)
+                result[k] = [process_dict_recursively(item, ocr_tokens, k) for item in v]
             elif isinstance(v, dict):
-                result[k] = process_dict_recursively(v, ocr_tokens)
+                result[k] = process_dict_recursively(v, ocr_tokens, k)
             else:
                 result[k] = {"value": v, "bounding_box": None, "confidence": 0.0, "match_type": "no_match"}
         return result
     elif isinstance(node, list):
-        return [process_dict_recursively(item, ocr_tokens) for item in node]
+        return [process_dict_recursively(item, ocr_tokens, key) for item in node]
     return node
 
 def merge_ocr_results(parsed_vllm_json: dict, ocr_tokens: List[OCRToken]) -> InvoiceExtraction:
