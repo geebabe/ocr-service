@@ -21,7 +21,7 @@ services:
       dockerfile: deploy/Dockerfile.model
     environment:
       - HF_TOKEN
-      - MODEL_ID=Qwen/Qwen3-VL-2B-Instruct
+      - MODEL_ID=erax-ai/EraX-VL-7B-V1.0
     shm_size: '4gb'
     ports:
       - "8001:8000"
