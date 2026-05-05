@@ -2,38 +2,13 @@ import httpx
 from app.core.config import settings
 from app.core.logger import logger
 
-SYSTEM_PROMPT = "Bạn là hệ thống OCR hóa đơn chuyên nghiệp. Hãy trích xuất dữ liệu và trả về JSON theo yêu cầu."
+SYSTEM_PROMPT = """Bạn là hệ thống OCR. Trích xuất thông tin từ hóa đơn.
 
-async def call_vlm_inference(image_base64: str, model_url: str, model_name: str) -> str:
-    """
-    Calls a VLM server via HTTP asynchronously.
-    Supports any OpenAI-compatible chat completion endpoint.
-    """
-    headers = {"Content-Type": "application/json"}
-    
-    payload = {
-        "model": model_name,
-        "messages": [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}"
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": """Trích xuất thông tin từ hóa đơn này và trả về JSON theo đúng định dạng sau:
+Trả về JSON theo đúng format:
 
 {
   "invoice_number": "...",
-  "invoice_date": "...",
+  "invoice_date":   "...",
   "vendor": {
     "name": "...",
     "address": "...",
@@ -64,7 +39,34 @@ async def call_vlm_inference(image_base64: str, model_url: str, model_name: str)
   }
 }
 
-Chỉ trả về JSON, không có văn bản giải thích."""
+Chỉ trả về JSON thuần, không giải thích."""
+
+async def call_vlm_inference(image_base64: str, model_url: str, model_name: str) -> str:
+    """
+    Calls a VLM server via HTTP asynchronously.
+    Supports any OpenAI-compatible chat completion endpoint.
+    """
+    headers = {"Content-Type": "application/json"}
+    
+    payload = {
+        "model": model_name,
+        "messages": [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "Trích xuất thông tin từ hóa đơn này."
                     }
                 ]
             }
