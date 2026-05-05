@@ -68,7 +68,9 @@ def _process_node(node: Any, img_w: int, img_h: int) -> Any:
                         bbox = normalize_bbox(bbox, img_w, img_h)
                     node[k] = {"value": extracted[0], "bounding_box": bbox}
                 else:
-                    node[k] = v
+                    node[k] = {"value": v}
+            elif isinstance(v, (int, float)):
+                node[k] = {"value": v}
             else:
                 node[k] = _process_node(v, img_w, img_h)
         return node
@@ -83,6 +85,10 @@ def _process_node(node: Any, img_w: int, img_h: int) -> Any:
                     if needs_normalize:
                         bbox = normalize_bbox(bbox, img_w, img_h)
                     node[i] = {"value": extracted[0], "bounding_box": bbox}
+                else:
+                    node[i] = {"value": item}
+            elif isinstance(item, (int, float)):
+                node[i] = {"value": item}
             else:
                 node[i] = _process_node(item, img_w, img_h)
         return node
@@ -95,6 +101,11 @@ def _process_node(node: Any, img_w: int, img_h: int) -> Any:
             if needs_normalize:
                 bbox = normalize_bbox(bbox, img_w, img_h)
             return {"value": extracted[0], "bounding_box": bbox}
+        else:
+            return {"value": node}
+            
+    elif isinstance(node, (int, float)):
+        return {"value": node}
             
     return node
 

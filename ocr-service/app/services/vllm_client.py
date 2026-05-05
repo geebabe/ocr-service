@@ -76,7 +76,7 @@ async def call_vllm_inference(image_base64: str) -> str:
     }
     
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=600.0) as client:
             response = await client.post(settings.VLLM_URL, json=payload, headers=headers)
             response.raise_for_status()
             
