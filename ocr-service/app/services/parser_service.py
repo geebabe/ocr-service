@@ -104,6 +104,8 @@ def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtrac
     Handles the case where Qwen outputs native <|box_start|> tags instead of a JSON list.
     """
     try:
+        logger.error(f"RAW VLM OUTPUT:\n{output_text}\n---")
+        
         # 1. Clean the output: extract JSON string
         json_match = re.search(r"\{.*\}", output_text, re.DOTALL)
         if not json_match:
