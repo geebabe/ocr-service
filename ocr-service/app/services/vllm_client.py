@@ -3,15 +3,47 @@ from app.core.config import settings
 from app.core.logger import logger
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
-Hãy phân tích ảnh hóa đơn và trả về thông tin dưới dạng Markdown.
-Sử dụng các tiêu đề, bảng hoặc danh sách để trình bày thông tin một cách rõ ràng (ví dụ: thông tin người bán, người mua, danh sách mặt hàng, tổng tiền).
-Chỉ trả về Markdown thuần, không thêm giải thích ngoài lề."""
+Phân tích ảnh hóa đơn và trả về ĐÚNG định dạng Markdown bên dưới, không thay đổi cấu trúc.
+Nếu không tìm thấy giá trị của trường nào, ghi "N/A".
+KHÔNG liệt kê danh sách sản phẩm/mặt hàng.
+Chỉ trả về Markdown thuần, không thêm giải thích.
+
+## Thông tin hóa đơn
+
+| Trường | Giá trị |
+|---|---|
+| Số hóa đơn | <giá trị> |
+| Ngày | <giá trị> |
+
+## Người bán
+
+| Trường | Giá trị |
+|---|---|
+| Tên | <giá trị> |
+| Mã số thuế | <giá trị> |
+
+## Người mua
+
+| Trường | Giá trị |
+|---|---|
+| Tên | <giá trị> |
+| Mã số thuế | <giá trị> |
+
+## Tổng tiền
+
+| Trường | Giá trị |
+|---|---|
+| Cộng tiền hàng | <giá trị> |
+| Thuế GTGT | <giá trị> |
+| Tổng thanh toán | <giá trị> |"""
+
+USER_MESSAGE = "Trích xuất thông tin từ hóa đơn này theo đúng mẫu Markdown đã cho."
 
 
 async def call_vllm_inference(image_base64: str) -> str:
     """
     Calls the vLLM server via HTTP asynchronously.
-    Returns raw Markdown text from the model.
+    Returns structured Markdown text from the model following a fixed template.
     """
     headers = {"Content-Type": "application/json"}
 
@@ -33,7 +65,7 @@ async def call_vllm_inference(image_base64: str) -> str:
                     },
                     {
                         "type": "text",
-                        "text": "Trích xuất toàn bộ thông tin từ hóa đơn này và trả về định dạng Markdown đẹp mắt.",
+                        "text": USER_MESSAGE,
                     },
                 ],
             },
