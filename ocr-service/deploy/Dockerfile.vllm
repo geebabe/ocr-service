@@ -1,0 +1,4 @@
+FROM vllm/vllm-openai:latest
+
+# Install missing dependencies for Vintern-1B-v3.5 / InternLM tokenizers
+RUN pip install --no-cache-dir sentencepiece tiktoken einops timm torchvision
