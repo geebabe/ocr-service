@@ -18,7 +18,7 @@ services:
   qwen-model:
     image: vllm/vllm-openai:latest
     command: >
-      --model Qwen/Qwen3-VL-2B-Instruct
+      --model 5CD-AI/Vintern-1B-v3_5
       --max-model-len 8192
       --gpu-memory-utilization 0.9
       --max-num-seqs 4
