@@ -3,15 +3,34 @@ from typing import Optional
 
 
 class InvoiceExtraction(BaseModel):
-    invoice_number: Optional[str] = Field(default=None, description="Số hóa đơn")
-    invoice_date: Optional[str] = Field(default=None, description="Ngày hóa đơn")
-    vendor_name: Optional[str] = Field(default=None, description="Tên công ty người bán")
-    vendor_tax_code: Optional[str] = Field(default=None, description="Mã số thuế người bán")
-    customer_name: Optional[str] = Field(default=None, description="Tên người mua / đơn vị mua hàng")
-    customer_tax_code: Optional[str] = Field(default=None, description="Mã số thuế người mua")
-    subtotal: Optional[str] = Field(default=None, description="Cộng tiền hàng (chưa thuế)")
-    tax: Optional[str] = Field(default=None, description="Tiền thuế GTGT")
-    total_amount: Optional[str] = Field(default=None, description="Tổng cộng tiền thanh toán")
+    invoice_number: Optional[str] = Field(
+        default=None,
+        description="Số hóa đơn / ký hiệu hóa đơn (VD: 0012345, AA/20E-0001234)"
+    )
+    invoice_date: Optional[str] = Field(
+        default=None,
+        description="Ngày xuất hóa đơn, giữ nguyên định dạng gốc (VD: 18/08/2020)"
+    )
+    vendor_name: Optional[str] = Field(
+        default=None,
+        description="Tên đơn vị / công ty / cửa hàng bán hàng (người bán)"
+    )
+    vendor_tax_code: Optional[str] = Field(
+        default=None,
+        description="Mã số thuế của người bán"
+    )
+    subtotal: Optional[str] = Field(
+        default=None,
+        description="Cộng tiền hàng chưa bao gồm thuế, giữ nguyên định dạng số gốc"
+    )
+    tax: Optional[str] = Field(
+        default=None,
+        description="Số tiền thuế GTGT (VAT), giữ nguyên định dạng số gốc"
+    )
+    total_amount: Optional[str] = Field(
+        default=None,
+        description="Tổng cộng tiền thanh toán (đã bao gồm thuế), giữ nguyên định dạng số gốc"
+    )
 
     def to_markdown(self) -> str:
         """Render the extracted invoice data as a fixed Markdown template."""
@@ -29,11 +48,6 @@ class InvoiceExtraction(BaseModel):
             "|---|---|\n"
             f"| Tên | {val(self.vendor_name)} |\n"
             f"| Mã số thuế | {val(self.vendor_tax_code)} |\n\n"
-            "## Người mua\n\n"
-            "| Trường | Giá trị |\n"
-            "|---|---|\n"
-            f"| Tên | {val(self.customer_name)} |\n"
-            f"| Mã số thuế | {val(self.customer_tax_code)} |\n\n"
             "## Tổng tiền\n\n"
             "| Trường | Giá trị |\n"
             "|---|---|\n"

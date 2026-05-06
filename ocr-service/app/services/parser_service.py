@@ -30,19 +30,12 @@ FIELD_ALIASES: Dict[str, str] = {
     "seller_tax_code": "vendor_tax_code",
     "mst_nguoi_ban": "vendor_tax_code",
     "tax_id": "vendor_tax_code",
-    # customer_name
-    "customer_name": "customer_name",
-    "buyer_name": "customer_name",
-    "ten_nguoi_mua": "customer_name",
-    # customer_tax_code
-    "customer_tax_code": "customer_tax_code",
-    "buyer_tax_code": "customer_tax_code",
-    "mst_nguoi_mua": "customer_tax_code",
     # subtotal
     "subtotal": "subtotal",
     "sub_total": "subtotal",
     "amount_before_tax": "subtotal",
     "cong_tien_hang": "subtotal",
+    "thanh_tien": "subtotal",
     # tax
     "tax": "tax",
     "tax_amount": "tax",
@@ -50,6 +43,7 @@ FIELD_ALIASES: Dict[str, str] = {
     "vat_amount": "tax",
     "thue": "tax",
     "thue_gtgt": "tax",
+    "tien_thue": "tax",
     # total_amount
     "total_amount": "total_amount",
     "total": "total_amount",
