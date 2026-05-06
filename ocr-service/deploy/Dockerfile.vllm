@@ -1,4 +1,6 @@
 FROM vllm/vllm-openai:latest
 
-# Install missing dependencies for Vintern-1B-v3.5 / InternLM tokenizers
-RUN pip install --no-cache-dir sentencepiece tiktoken einops timm torchvision
+# Cài đặt các thư viện lõi cho Vintern / InternLM
+# Dùng python3 -m pip để đảm bảo cài đúng vào môi trường Python của vLLM
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir sentencepiece protobuf tiktoken einops timm torchvision
