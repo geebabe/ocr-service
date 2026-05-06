@@ -21,6 +21,7 @@ services:
       dockerfile: deploy/Dockerfile.vllm
     command: >
       --model 5CD-AI/Vintern-1B-v3_5
+      --tokenizer-mode slow
       --max-model-len 8192
       --gpu-memory-utilization 0.9
       --max-num-seqs 4
