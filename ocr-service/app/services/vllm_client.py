@@ -1,6 +1,8 @@
 import httpx
+import instructor
 from app.core.config import settings
 from app.core.logger import logger
+from app.schemas.response import InvoiceExtraction
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR. Trích xuất thông tin từ hóa đơn.
 Với mỗi trường, hãy dùng grounding để chỉ rõ vị trí text trên ảnh.
@@ -42,47 +44,55 @@ Trả về JSON theo đúng format (bbox là tọa độ [xmin, ymin, xmax, ymax
 
 Chỉ trả về JSON thuần, không giải thích."""
 
-async def call_vllm_inference(image_base64: str) -> str:
+# Initialize instructor client
+# We use the base URL (without /v1/chat/completions) for instructor
+base_url = settings.VLLM_URL.split("/chat/completions")[0]
+instructor_client = instructor.from_httpx(
+    httpx.AsyncClient(timeout=120.0),
+    base_url=base_url,
+)
+
+async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
     """
-    Calls the vLLM server via HTTP asynchronously.
+    Calls the VLM server and returns a structured InvoiceExtraction object using instructor.
     """
-    headers = {"Content-Type": "application/json"}
     
-    payload = {
-        "model": settings.VLLM_MODEL,
-        "messages": [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}"
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": "Trích xuất thông tin từ hóa đơn này. Bắt buộc trả về JSON theo đúng format đã yêu cầu. Không thêm bất kỳ giải thích nào."
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}"
                     }
-                ]
-            }
-        ],
-        "max_tokens": settings.VLLM_MAX_TOKENS,
-        "temperature": settings.VLLM_TEMPERATURE
-    }
+                },
+                {
+                    "type": "text",
+                    "text": "Trích xuất thông tin từ hóa đơn này. Bắt buộc trả về JSON theo đúng format đã yêu cầu. Không thêm bất kỳ giải thích nào."
+                }
+            ]
+        }
+    ]
     
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(settings.VLLM_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
+        # Use instructor to get structured output
+        # Mode.MD_JSON is often more robust for VLMs that like to wrap JSON in markdown blocks
+        result = await instructor_client.chat.completions.create(
+            model=settings.VLLM_MODEL,
+            messages=messages,
+            response_model=InvoiceExtraction,
+            max_tokens=settings.VLLM_MAX_TOKENS,
+            temperature=settings.VLLM_TEMPERATURE,
+            # We use MD_JSON mode as Qwen often outputs ```json ... ```
+            mode=instructor.Mode.MD_JSON 
+        )
+        return result
             
     except Exception as e:
-        logger.error(f"vLLM API call failed: {str(e)}")
+        logger.error(f"Structured VLM API call failed: {str(e)}")
         raise

@@ -99,12 +99,25 @@ def _process_node(node: Any, img_w: int, img_h: int) -> Any:
             
     return node
 
+def normalize_invoice_data(extraction: InvoiceExtraction, img_w: int, img_h: int) -> InvoiceExtraction:
+    """
+    Normalizes bounding boxes in an existing InvoiceExtraction object.
+    """
+    # Convert to dict, process, and convert back
+    data_dict = extraction.model_dump()
+    normalized_dict = _process_node(data_dict, img_w, img_h)
+    return InvoiceExtraction(**normalized_dict)
+
 def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtraction:
     """
     Parses the JSON/Dict output from Qwen3-VL, extracting bounding boxes and values.
     Handles both proper JSON and Python-like dictionary strings (single quotes, None).
     """
     try:
+        if isinstance(output_text, InvoiceExtraction):
+            # Already parsed (e.g. by instructor), just normalize
+            return normalize_invoice_data(output_text, img_w, img_h)
+            
         logger.info(f"RAW VLM OUTPUT:\n{output_text}\n---")
         
         # 1. Clean the output: extract anything between the first { and the last }
