@@ -1,51 +1,25 @@
 import httpx
 from app.core.config import settings
 from app.core.logger import logger
+from app.schemas.response import InvoiceExtraction
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
-Phân tích ảnh hóa đơn và trả về ĐÚNG định dạng Markdown bên dưới, không thay đổi cấu trúc.
-Nếu không tìm thấy giá trị của trường nào, ghi "N/A".
-KHÔNG liệt kê danh sách sản phẩm/mặt hàng.
-Chỉ trả về Markdown thuần, không thêm giải thích.
+Phân tích ảnh hóa đơn và trả về JSON theo đúng schema được cung cấp.
+Nếu không tìm thấy giá trị của trường nào, để null.
+KHÔNG liệt kê danh sách sản phẩm/mặt hàng."""
 
-## Thông tin hóa đơn
-
-| Trường | Giá trị |
-|---|---|
-| Số hóa đơn | <giá trị> |
-| Ngày | <giá trị> |
-
-## Người bán
-
-| Trường | Giá trị |
-|---|---|
-| Tên | <giá trị> |
-| Mã số thuế | <giá trị> |
-
-## Người mua
-
-| Trường | Giá trị |
-|---|---|
-| Tên | <giá trị> |
-| Mã số thuế | <giá trị> |
-
-## Tổng tiền
-
-| Trường | Giá trị |
-|---|---|
-| Cộng tiền hàng | <giá trị> |
-| Thuế GTGT | <giá trị> |
-| Tổng thanh toán | <giá trị> |"""
-
-USER_MESSAGE = "Trích xuất thông tin từ hóa đơn này theo đúng mẫu Markdown đã cho."
+USER_MESSAGE = "Trích xuất thông tin từ hóa đơn này."
 
 
 async def call_vllm_inference(image_base64: str) -> str:
     """
-    Calls the vLLM server via HTTP asynchronously.
-    Returns structured Markdown text from the model following a fixed template.
+    Calls the vLLM server via HTTP asynchronously with guided JSON structured output.
+    Uses InvoiceExtraction schema to enforce valid JSON from the model.
     """
     headers = {"Content-Type": "application/json"}
+
+    # Generate JSON schema from Pydantic model for guided decoding
+    invoice_schema = InvoiceExtraction.model_json_schema()
 
     payload = {
         "model": settings.VLLM_MODEL,
@@ -72,6 +46,7 @@ async def call_vllm_inference(image_base64: str) -> str:
         ],
         "max_tokens": settings.VLLM_MAX_TOKENS,
         "temperature": settings.VLLM_TEMPERATURE,
+        "guided_json": invoice_schema,
     }
 
     try:
@@ -85,4 +60,3 @@ async def call_vllm_inference(image_base64: str) -> str:
     except Exception as e:
         logger.error(f"vLLM API call failed: {str(e)}")
         raise
-
