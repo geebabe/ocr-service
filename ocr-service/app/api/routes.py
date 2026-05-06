@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import time
-from app.schemas.response import APIResponse, InvoiceExtraction
+from app.schemas.response import APIResponse
 from app.services.document_service import process_document
 from app.services.vllm_client import call_vllm_inference
 from app.services.parser_service import parse_vllm_output
@@ -21,14 +21,14 @@ async def perform_ocr(file: UploadFile = File(...)):
         # 2. Call vLLM for inference
         raw_output = await call_vllm_inference(image_base64)
         
-        # 3. Parse output and map to Pydantic models
-        parsed_data = parse_vllm_output(raw_output, width, height)
+        # 3. Clean up Markdown output
+        markdown_text = parse_vllm_output(raw_output)
         
         latency = round(time.time() - start_time, 2)
         
         return APIResponse(
             success=True,
-            data=parsed_data,
+            data=markdown_text,
             metadata={"latency_seconds": latency, "image_size": f"{width}x{height}"}
         )
         
