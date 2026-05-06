@@ -17,13 +17,15 @@ services:
 
   qwen-model:
     image: vllm/vllm-openai:latest
+    entrypoint: /bin/bash
     command: >
+      -c "pip install sentencepiece tiktoken einops timm && python3 -m vllm.entrypoints.openai.api_server
       --model 5CD-AI/Vintern-1B-v3_5
       --max-model-len 8192
       --gpu-memory-utilization 0.9
       --max-num-seqs 4
       --enforce-eager
-      --trust-remote-code
+      --trust-remote-code"
     environment:
       - HF_TOKEN
     shm_size: '4gb'
