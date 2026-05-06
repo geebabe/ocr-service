@@ -4,17 +4,27 @@ from app.core.logger import logger
 from app.schemas.response import InvoiceExtraction
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
-Phân tích ảnh hóa đơn và trả về JSON theo đúng schema được cung cấp.
-Nếu không tìm thấy giá trị của trường nào, để null.
-KHÔNG liệt kê danh sách sản phẩm/mặt hàng."""
+CHỈ trích xuất các trường sau:
+- invoice_number (Số hóa đơn)
+- invoice_date (Ngày hóa đơn)
+- vendor_name (Tên người bán)
+- vendor_tax_code (MST người bán)
+- customer_name (Tên người mua)
+- customer_tax_code (MST người mua)
+- subtotal (Cộng tiền hàng)
+- tax (Tiền thuế)
+- total_amount (Tổng thanh toán)
 
-USER_MESSAGE = "Trích xuất thông tin từ hóa đơn này."
+TUYỆT ĐỐI KHÔNG trả về danh sách 'items' hay 'products'.
+Trả về JSON đúng schema, không kèm giải thích."""
+
+USER_MESSAGE = "Trích xuất thông tin từ hóa đơn này sang JSON."
 
 
 async def call_vllm_inference(image_base64: str) -> str:
     """
-    Calls the vLLM server via HTTP asynchronously with guided JSON structured output.
-    Uses InvoiceExtraction schema to enforce valid JSON from the model.
+    Calls the model server via HTTP asynchronously with guided JSON structured output.
+    Uses InvoiceExtraction schema to constrain generation via outlines.
     """
     headers = {"Content-Type": "application/json"}
 
@@ -44,8 +54,8 @@ async def call_vllm_inference(image_base64: str) -> str:
                 ],
             },
         ],
-        "max_tokens": settings.VLLM_MAX_TOKENS,
-        "temperature": settings.VLLM_TEMPERATURE,
+        "max_tokens": 1000,
+        "temperature": 0,
         "guided_json": invoice_schema,
     }
 

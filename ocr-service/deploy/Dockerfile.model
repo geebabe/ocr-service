@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir \
     timm \
     fastapi \
     uvicorn \
-    pydantic
+    pydantic \
+    outlines
 
 # Attempt to install flash-attn for speedup (optional)
 RUN pip install --no-cache-dir flash-attn --no-build-isolation || true
