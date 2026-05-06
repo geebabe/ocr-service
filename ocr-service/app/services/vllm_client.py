@@ -56,7 +56,10 @@ async def call_vllm_inference(image_base64: str) -> str:
         ],
         "max_tokens": 1000,
         "temperature": 0,
-        "guided_json": invoice_schema,
+        "extra_body": {
+            "guided_json": invoice_schema,
+            "guided_decoding_backend": "outlines",
+        },
     }
 
     try:
