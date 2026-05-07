@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any, List
 from app.schemas.response import InvoiceExtraction
 from app.core.logger import logger
@@ -64,13 +65,12 @@ def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtrac
     Only bbox normalization from Qwen's 0-1000 coordinate space to pixel coords is applied.
     """
     try:
-        # vLLM might sometimes wrap the JSON in markdown blocks or have leading/trailing whitespace
-        clean_text = output_text.strip()
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-        clean_text = clean_text.strip()
+        # Use regex to robustly extract the JSON object, ignoring any markdown or trailing tokens
+        match = re.search(r"\{.*\}", output_text, re.DOTALL)
+        if match:
+            clean_text = match.group(0)
+        else:
+            clean_text = output_text.strip()
 
         parsed_dict = json.loads(clean_text)
 
