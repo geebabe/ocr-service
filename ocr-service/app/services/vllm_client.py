@@ -51,10 +51,8 @@ async def call_vllm_inference(image_base64: str) -> str:
         "max_tokens": settings.VLLM_MAX_TOKENS,
         "temperature": settings.VLLM_TEMPERATURE,
         # Guided decoding: forces vLLM to produce JSON matching InvoiceExtraction schema
-        "extra_body": {
-            "guided_json": invoice_schema,
-            "guided_decoding_backend": "outlines",
-        },
+        "guided_json": invoice_schema,
+        "guided_decoding_backend": "outlines",
     }
 
     try:
