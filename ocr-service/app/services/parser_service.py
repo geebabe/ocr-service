@@ -58,6 +58,38 @@ def _wrap_raw_values(node: Any) -> Any:
         return {"value": node, "bounding_box": None}
 
 
+def _extract_qwen_special_tokens(node: Any) -> Any:
+    """
+    Recursively walk the dict. If a 'value' field contains Qwen3-VL's special 
+    bbox tokens like <|box_start|>(x1,y1),(x2,y2)<|box_end|>, extract the bbox,
+    clean the value string, and update the 'bounding_box' field.
+    """
+    if isinstance(node, dict):
+        new_node = {}
+        for k, v in node.items():
+            new_node[k] = _extract_qwen_special_tokens(v)
+            
+        # If this node looks like a BBoxField (has 'value' and 'bounding_box')
+        if "value" in new_node and isinstance(new_node["value"], str):
+            val_str = new_node["value"]
+            # Look for Qwen3-VL special bbox pattern
+            pattern = r"<\|box_start\|>\((\d+),(\d+)\),\((\d+),(\d+)\)<\|box_end\|>"
+            match = re.search(pattern, val_str)
+            if match:
+                x1, y1, x2, y2 = int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4))
+                # Only override if bounding_box is None or dummy
+                current_bbox = new_node.get("bounding_box")
+                if not current_bbox or current_bbox == [0, 0, 0, 0]:
+                    new_node["bounding_box"] = [x1, y1, x2, y2]
+                # Remove token from value
+                new_node["value"] = re.sub(pattern, "", val_str).strip()
+                
+        return new_node
+    elif isinstance(node, list):
+        return [_extract_qwen_special_tokens(item) for item in node]
+    return node
+
+
 def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtraction:
     """
     Parses the JSON output from vLLM (guided decoding).
@@ -77,8 +109,11 @@ def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtrac
         # Wrap scalar values to match BBoxField schema
         wrapped_dict = _wrap_raw_values(parsed_dict)
 
+        # Extract any Qwen3-VL special bbox tokens embedded in values
+        cleaned_dict = _extract_qwen_special_tokens(wrapped_dict)
+
         # Normalize any bounding boxes that are in Qwen's 0-1000 scale
-        normalized_dict = _normalize_bboxes(wrapped_dict, img_w, img_h)
+        normalized_dict = _normalize_bboxes(cleaned_dict, img_w, img_h)
 
         return InvoiceExtraction(**normalized_dict)
 
