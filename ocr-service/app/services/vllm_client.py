@@ -5,21 +5,19 @@ from app.schemas.response import InvoiceExtraction
 import json
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên nghiệp. Trích xuất thông tin từ hóa đơn.
-Với mỗi trường, hãy dùng grounding để chỉ rõ vị trí text trên ảnh.
 
-Trả về ĐÚNG CẤU TRÚC JSON sau (bbox là tọa độ [xmin, ymin, xmax, ymax], chuẩn hóa 0-1000):
-
+Trả về ĐÚNG CẤU TRÚC JSON sau:
 {
-  "invoice_number": {"value": "...", "bounding_box": [...]},
-  "invoice_date":   {"value": "...", "bounding_box": [...]},
+  "invoice_number": {"value": "...", "bounding_box": [0,0,0,0]},
+  "invoice_date": {"value": "...", "bounding_box": [0,0,0,0]},
   "vendor": {
-    "name": {"value": "...", "bounding_box": [...]},
-    "tax_code": {"value": "...", "bounding_box": [...]},
+    "name": {"value": "...", "bounding_box": [0,0,0,0]},
+    "tax_code": {"value": "...", "bounding_box": [0,0,0,0]}
   },
-  "total_amount": {"value": "...", "bounding_box": [...]},
+  "total_amount": {"value": "...", "bounding_box": [0,0,0,0]}
 }
 
-CHỈ trả về JSON thuần túy, không giải thích thêm."""
+CHỈ trả về JSON thuần túy, KHÔNG CÓ KÝ TỰ THỪA, không giải thích."""
 
 async def call_vllm_inference(image_base64: str) -> str:
     """
