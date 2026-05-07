@@ -16,13 +16,19 @@ services:
       - ocr-network
 
   qwen-model:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.model
+    image: vllm/vllm-openai:latest
     environment:
       - HF_TOKEN
-      - MODEL_ID=erax-ai/EraX-VL-7B-V1.0
-    shm_size: '4gb'
+      - MODEL_ID=${MODEL_ID:-erax-ai/EraX-VL-7B-V1.0}
+    command: >
+      --model ${MODEL_ID:-erax-ai/EraX-VL-7B-V1.0}
+      --max-model-len 8192
+      --max-num-batched-tokens 4096
+      --gpu-memory-utilization 0.9
+      --trust-remote-code
+      --enforce-eager
+      --tensor-parallel-size 1
+    shm_size: '8gb'
     ports:
       - "8001:8000"
     volumes:
