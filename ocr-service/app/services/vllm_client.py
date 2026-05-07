@@ -21,10 +21,11 @@ Trả về ĐÚNG CẤU TRÚC JSON sau (bbox là tọa độ [xmin, ymin, xmax, 
 
 CHỈ trả về JSON thuần túy, không giải thích thêm."""
 
-async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
+async def call_vllm_inference(image_base64: str) -> str:
     """
     Calls the vLLM server to extract minimal invoice data.
     Uses guided_json directly via httpx to avoid openai SDK dependency issues.
+    Returns the raw string output to be parsed by parser_service.py.
     """
     
     messages = [
@@ -71,16 +72,10 @@ async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
         if not content:
             raise ValueError("VLM returned an empty response")
             
-        # Robustly extract JSON block in case the model still wraps it in markdown
-        import re
-        json_match = re.search(r"(\{.*\})", content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-            
-        logger.debug(f"VLM Output Content (Cleaned): {content}")
+        logger.debug(f"VLM Output Content (Raw): {content}")
         
-        # Parse the JSON string back into the Pydantic model
-        return InvoiceExtraction.model_validate_json(content)
+        # Return raw string, let parser_service.py handle messy Python dicts vs JSON
+        return content
             
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error from VLM API: {e.response.status_code} - {e.response.text}")
