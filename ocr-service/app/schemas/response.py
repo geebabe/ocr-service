@@ -35,16 +35,16 @@ class InvoiceExtraction(BaseModel):
     invoice_date: Optional[BBoxField] = Field(default=None)
     
     vendor: Optional[VendorInfo] = Field(default=None)
-    customer: Optional[CustomerInfo] = Field(default=None)
-    
-    items: List[InvoiceItem] = Field(default_factory=list, description="List of items in the invoice")
+    # customer: Optional[CustomerInfo] = Field(default=None)
+
+    # items: List[InvoiceItem] = Field(default_factory=list, description="List of items in the invoice")
     
     subtotal: Optional[BBoxField] = Field(default=None, description="Total amount before tax")
     tax: Optional[BBoxField] = Field(default=None, description="Tax amount")
     total_amount: Optional[BBoxField] = Field(default=None, description="Final total amount including tax")
     currency: Optional[BBoxField] = Field(default=None, description="Currency code (e.g., VND, USD)")
     
-    payment_info: Optional[PaymentInfo] = Field(default=None)
+    # payment_info: Optional[PaymentInfo] = Field(default=None)
 
 class APIResponse(BaseModel):
     success: bool

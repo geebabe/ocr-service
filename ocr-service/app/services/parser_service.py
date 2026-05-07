@@ -38,6 +38,25 @@ def _normalize_bboxes(node: Any, img_w: int, img_h: int) -> Any:
         return [_normalize_bboxes(item, img_w, img_h) for item in node]
     return node
 
+def _wrap_raw_values(node: Any) -> Any:
+    """
+    Recursively wrap raw scalar values into the BBoxField format.
+    """
+    if isinstance(node, dict):
+        # If the dict looks like a BBoxField (has 'value' key), leave it as is
+        if "value" in node:
+            return node
+        
+        return {k: _wrap_raw_values(v) for k, v in node.items()}
+    elif isinstance(node, list):
+        return [_wrap_raw_values(item) for item in node]
+    elif node is None:
+        return None
+    else:
+        # It's a raw scalar (str, int, float, bool)
+        return {"value": node, "bounding_box": None}
+
+
 def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtraction:
     """
     Parses the JSON output from vLLM (guided decoding).
@@ -55,14 +74,17 @@ def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtrac
 
         parsed_dict = json.loads(clean_text)
 
+        # Wrap scalar values to match BBoxField schema
+        wrapped_dict = _wrap_raw_values(parsed_dict)
+
         # Normalize any bounding boxes that are in Qwen's 0-1000 scale
-        normalized_dict = _normalize_bboxes(parsed_dict, img_w, img_h)
+        normalized_dict = _normalize_bboxes(wrapped_dict, img_w, img_h)
 
         return InvoiceExtraction(**normalized_dict)
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode JSON from model output: {str(e)}\nRaw output: {output_text}")
-        return InvoiceExtraction()
+        raise
     except Exception as e:
-        logger.error(f"Error parsing model output: {str(e)}", exc_info=True)
-        return InvoiceExtraction()
+        logger.error(f"Error parsing model output: {str(e)}\nWrapped dict: {wrapped_dict if 'wrapped_dict' in locals() else 'N/A'}", exc_info=True)
+        raise
