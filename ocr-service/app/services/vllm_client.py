@@ -1,8 +1,8 @@
 import httpx
-from openai import AsyncOpenAI
 from app.core.config import settings
 from app.core.logger import logger
 from app.schemas.response import InvoiceExtraction
+import json
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên nghiệp. Trích xuất thông tin từ hóa đơn.
 Với mỗi trường, hãy dùng grounding để chỉ rõ vị trí text trên ảnh.
@@ -21,22 +21,10 @@ Trả về ĐÚNG CẤU TRÚC JSON sau (bbox là tọa độ [xmin, ymin, xmax, 
 
 CHỈ trả về JSON thuần túy, không giải thích thêm."""
 
-# Initialize AsyncOpenAI client
-base_url = settings.VLLM_URL.split("/chat/completions")[0]
-if not base_url.endswith("/v1"):
-    base_url = f"{base_url}/v1"
-
-client = AsyncOpenAI(
-    api_key="none",
-    base_url=base_url,
-    http_client=httpx.AsyncClient(timeout=120.0)
-)
-
 async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
     """
     Calls the vLLM server to extract minimal invoice data.
-    Uses extra_body={"guided_json": ...} for strict schema enforcement,
-    but with a highly simplified schema to ensure fast inference.
+    Uses guided_json directly via httpx to avoid openai SDK dependency issues.
     """
     
     messages = [
@@ -61,19 +49,25 @@ async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
         }
     ]
     
+    payload = {
+        "model": settings.VLLM_MODEL,
+        "messages": messages,
+        "max_tokens": settings.VLLM_MAX_TOKENS,
+        "temperature": settings.VLLM_TEMPERATURE,
+        "guided_json": InvoiceExtraction.model_json_schema()
+    }
+    
     try:
-        # Using guided_json in extra_body with a VERY minimal schema to ensure it's fast
-        response = await client.chat.completions.create(
-            model=settings.VLLM_MODEL,
-            messages=messages,
-            max_tokens=settings.VLLM_MAX_TOKENS,
-            temperature=settings.VLLM_TEMPERATURE,
-            extra_body={
-                "guided_json": InvoiceExtraction.model_json_schema()
-            }
-        )
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                settings.VLLM_URL,
+                json=payload
+            )
+            response.raise_for_status()
+            
+        result_json = response.json()
+        content = result_json["choices"][0]["message"]["content"]
         
-        content = response.choices[0].message.content
         if not content:
             raise ValueError("VLM returned an empty response")
             
@@ -88,8 +82,9 @@ async def call_vllm_inference(image_base64: str) -> InvoiceExtraction:
         # Parse the JSON string back into the Pydantic model
         return InvoiceExtraction.model_validate_json(content)
             
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error from VLM API: {e.response.status_code} - {e.response.text}")
+        raise
     except Exception as e:
         logger.error(f"Structured VLM API call failed: {str(e)}")
-        if hasattr(e, 'response'):
-            logger.error(f"API Error Response: {e.response.text}")
         raise
