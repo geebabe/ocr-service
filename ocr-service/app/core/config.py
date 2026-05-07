@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # vLLM Server Settings
-    VLLM_URL: str = "http://qwen-vlm:8000/v1/chat/completions"
-    VLLM_MODEL: str = "Qwen/Qwen3-VL-2B-Instruct"
+    VLLM_URL: str = "http://qwen-model:8000/v1/chat/completions"
+    VLLM_MODEL: str = "erax-ai/EraX-VL-7B-V1.0"
     VLLM_MAX_TOKENS: int = 1024
     VLLM_TEMPERATURE: float = 0.0
     

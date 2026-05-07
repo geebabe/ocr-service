@@ -9,6 +9,7 @@ services:
       - "8000:8000"
     environment:
       - VLLM_URL=http://qwen-model:8000/v1/chat/completions
+      - VLLM_MODEL=${MODEL_ID:-erax-ai/EraX-VL-7B-V1.0}
     depends_on:
       qwen-model:
         condition: service_healthy
