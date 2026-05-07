@@ -23,7 +23,7 @@ services:
       - MODEL_ID=${MODEL_ID:-Qwen/Qwen3-VL-8B-Instruct}
     command: >
       --model ${MODEL_ID:-Qwen/Qwen3-VL-8B-Instruct}
-      --max-model-len 32768
+      --max-model-len 8192
       --max-num-batched-tokens 8192
       --gpu-memory-utilization 0.92
       --trust-remote-code
