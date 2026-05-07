@@ -1,3 +1,4 @@
+import json
 import httpx
 from app.core.config import settings
 from app.core.logger import logger
@@ -6,7 +7,10 @@ from app.schemas.response import InvoiceExtraction
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
 Hãy phân tích ảnh hóa đơn và trả về thông tin theo đúng JSON schema được cung cấp.
 Với mỗi trường, hãy cung cấp giá trị trích xuất và tọa độ bounding box [xmin, ymin, xmax, ymax] trên ảnh gốc.
-Chỉ trả về JSON thuần, không thêm giải thích hay markdown."""
+Chỉ trả về JSON thuần, không thêm giải thích hay markdown.
+
+JSON Schema:
+{schema_str}"""
 
 
 async def call_vllm_inference(image_base64: str) -> str:
@@ -18,13 +22,15 @@ async def call_vllm_inference(image_base64: str) -> str:
 
     # Generate JSON schema from Pydantic model for guided decoding
     invoice_schema = InvoiceExtraction.model_json_schema()
+    schema_str = json.dumps(invoice_schema, indent=2)
+    system_prompt = SYSTEM_PROMPT.format(schema_str=schema_str)
 
     payload = {
         "model": settings.VLLM_MODEL,
         "messages": [
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT,
+                "content": system_prompt,
             },
             {
                 "role": "user",
