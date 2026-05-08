@@ -6,7 +6,10 @@ from app.schemas.response import InvoiceExtraction
 
 SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
 Hãy phân tích ảnh hóa đơn và trả về thông tin theo đúng JSON schema được cung cấp.
-Với mỗi trường, hãy cung cấp giá trị trích xuất và tọa độ bounding box [xmin, ymin, xmax, ymax] trên ảnh gốc.
+Với mỗi trường, hãy cung cấp giá trị trích xuất (value) và tọa độ (bounding_box).
+QUAN TRỌNG ĐỂ KÍCH HOẠT NATIVE GROUNDING: 
+- Tọa độ bounding box phải được CHUẨN HÓA (normalized) về thang đo [0, 1000] thay vì pixel gốc.
+- Trả về dưới dạng mảng 4 số nguyên [xmin, ymin, xmax, ymax].
 Chỉ trả về JSON thuần, không thêm giải thích hay markdown.
 
 JSON Schema:
