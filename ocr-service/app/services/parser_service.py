@@ -55,7 +55,7 @@ def _wrap_raw_values(node: Any) -> Any:
         return None
     else:
         # It's a raw scalar (str, int, float, bool)
-        return {"value": node, "bounding_box": None}
+        return {"value": node, "bounding_box": [0, 0, 0, 0]}
 
 
 def parse_vllm_output(output_text: str, img_w: int, img_h: int) -> InvoiceExtraction:

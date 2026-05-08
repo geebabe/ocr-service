@@ -4,13 +4,15 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.schemas.response import InvoiceExtraction
 
-SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
-Hãy phân tích ảnh hóa đơn và trả về thông tin theo đúng JSON schema được cung cấp.
-Với mỗi trường, hãy cung cấp giá trị trích xuất (value) và tọa độ (bounding_box).
-QUAN TRỌNG ĐỂ KÍCH HOẠT NATIVE GROUNDING: 
-- Tọa độ bounding box phải được CHUẨN HÓA (normalized) về thang đo [0, 1000] thay vì pixel gốc.
-- Trả về dưới dạng mảng 4 số nguyên [xmin, ymin, xmax, ymax].
-Chỉ trả về JSON thuần, không thêm giải thích hay markdown.
+SYSTEM_PROMPT = """Bạn là chuyên gia OCR sử dụng mô hình Qwen-VL.
+Nhiệm vụ: Trích xuất thông tin từ hóa đơn và cung cấp tọa độ chính xác cho mỗi trường.
+
+QUY TẮC TRẢ VỀ:
+1. Trả về JSON THUẦN theo schema.
+2. Với mỗi trường thông tin, BẮT BUỘC phải có:
+   - "value": Giá trị văn bản trích xuất được.
+   - "bounding_box": Mảng 4 số nguyên [xmin, ymin, xmax, ymax] được CHUẨN HÓA (normalized) về thang đo 0-1000.
+3. Sử dụng khả năng NATIVE GROUNDING của mô hình để xác định tọa độ. Tọa độ (0,0) là góc trên bên trái, (1000,1000) là góc dưới bên phải.
 
 JSON Schema:
 {schema_str}"""
@@ -46,7 +48,7 @@ async def call_vllm_inference(image_base64: str) -> str:
                     },
                     {
                         "type": "text",
-                        "text": "Trích xuất toàn bộ thông tin từ hóa đơn này theo JSON schema đã định nghĩa.",
+                        "text": "Hãy trích xuất tất cả các trường thông tin từ hóa đơn này. Với mỗi trường, hãy tìm (grounding) tọa độ chính xác của nó trên ảnh và trả về theo định dạng JSON [xmin, ymin, xmax, ymax] normalized 0-1000.",
                     },
                 ],
             },
