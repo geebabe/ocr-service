@@ -40,7 +40,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/extract", response_model=list[OcrResult])
-def extract_text(req: OcrRequest):
+async def extract_text(req: OcrRequest):
     try:
         # Decode base64
         image_data = base64.b64decode(req.image_base64)
@@ -63,8 +63,11 @@ def extract_text(req: OcrRequest):
         out = []
         for i, (t, s) in enumerate(zip(texts, scores)):
             if i < len(boxes):
-                b = boxes[i].tolist()
-                bbox = [int(b[0]), int(b[1]), int(b[2]), int(b[3])]
+                b = boxes[i].tolist() if hasattr(boxes[i], "tolist") else boxes[i]
+                # b is a list of 4 points: [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
+                xs = [pt[0] for pt in b]
+                ys = [pt[1] for pt in b]
+                bbox = [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
             else:
                 bbox = [0, 0, 0, 0]
             
@@ -73,5 +76,7 @@ def extract_text(req: OcrRequest):
         return out
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
 
