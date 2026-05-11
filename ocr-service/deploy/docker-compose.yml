@@ -5,6 +5,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -23,6 +24,9 @@ services:
     build:
       context: ../../paddleocr-service
       dockerfile: ../ocr-service/deploy/Dockerfile.paddleocr
+    restart: unless-stopped
+    environment:
+      - OMP_NUM_THREADS=1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -36,6 +40,7 @@ services:
 
   qwen-model:
     image: vllm/vllm-openai:latest
+    restart: unless-stopped
     environment:
       - HF_TOKEN
       - MODEL_ID=${MODEL_ID:-Qwen/Qwen3-VL-2B-Instruct}
