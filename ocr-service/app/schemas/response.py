@@ -1,12 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Tuple, Union
 
-class BBoxField(BaseModel):
-    value: Union[str, float, int, None] = Field(description="The extracted text or numeric value")
-    bounding_box: Optional[Tuple[int, int, int, int]] = Field(
-        default=None, 
-        description="Bounding box coordinates [xmin, ymin, xmax, ymax] in original image pixels"
-    )
+from .base import BBoxField
 
 class InvoiceItem(BaseModel):
     description: BBoxField = Field(description="Item name or description")
