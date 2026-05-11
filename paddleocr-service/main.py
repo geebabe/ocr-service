@@ -64,12 +64,22 @@ async def extract_text(req: OcrRequest):
         for i, (t, s) in enumerate(zip(texts, scores)):
             if i < len(boxes):
                 b = boxes[i].tolist() if hasattr(boxes[i], "tolist") else boxes[i]
-                # b is a list of 4 points: [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
-                xs = [pt[0] for pt in b]
-                ys = [pt[1] for pt in b]
-                bbox = [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
-            else:
-                bbox = [0, 0, 0, 0]
+                
+                if b and isinstance(b[0], (int, float, np.integer, np.floating)):
+                    if len(b) == 4:
+                        bbox = [int(b[0]), int(b[1]), int(b[2]), int(b[3])]
+                    elif len(b) >= 8:
+                        xs = b[0::2]
+                        ys = b[1::2]
+                        bbox = [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
+                    else:
+                        bbox = [0, 0, 0, 0]
+                elif b and isinstance(b[0], (list, tuple, np.ndarray)):
+                    xs = [pt[0] for pt in b]
+                    ys = [pt[1] for pt in b]
+                    bbox = [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
+                else:
+                    bbox = [0, 0, 0, 0]
             
             out.append(OcrResult(text=t, score=float(s), bbox=bbox))
             
