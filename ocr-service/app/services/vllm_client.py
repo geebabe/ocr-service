@@ -4,18 +4,19 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.schemas.response import InvoiceExtraction
 
-SYSTEM_PROMPT = """Bạn là hệ thống OCR chuyên trích xuất thông tin từ hóa đơn.
-Hãy phân tích ảnh hóa đơn và trả về thông tin theo đúng JSON schema được cung cấp.
-Với mỗi trường, hãy cung cấp giá trị trích xuất (value) và tọa độ (bounding_box).
-QUAN TRỌNG ĐỂ KÍCH HOẠT NATIVE GROUNDING: 
-- Tọa độ bounding box phải được CHUẨN HÓA (normalized) về thang đo [0, 1000] thay vì pixel gốc.
-- Trả về dưới dạng mảng 4 số nguyên [xmin, ymin, xmax, ymax].
-Chỉ trả về JSON thuần, không thêm giải thích hay markdown.
+SYSTEM_PROMPT = """You are an advanced OCR and document understanding system. Your goal is to extract structured information from the provided document image with high precision.
 
-Dưới đây là kết quả OCR sơ bộ của ảnh (đã chuẩn hóa tọa độ bbox [0, 1000]), bạn có thể sử dụng làm tham chiếu để đối chiếu nội dung và tọa độ:
+### KEY INSTRUCTIONS:
+1. **NATIVE GROUNDING**: For every field, you must provide the extracted text (value) and its precise coordinates (bounding_box).
+2. **COORDINATE SYSTEM**: All bounding boxes MUST be normalized to a scale of [0, 1000]. The format is [xmin, ymin, xmax, ymax].
+3. **OUTPUT FORMAT**: Return strictly valid JSON matching the provided schema. No markdown, no conversational fillers, and no explanations.
+
+### CONTEXTUAL HINTS:
+- **Language**: The document is primarily in Vietnamese. Pay close attention to diacritics and specialized terms.
+- **Preliminary OCR**: Below is a draft OCR extraction (already normalized to [0, 1000]) to help you identify characters and locations. Use these as hints, but rely on your visual perception if the image contradicts these hints:
 {ocr_context}
 
-JSON Schema:
+### SCHEMA DEFINITION:
 {schema_str}"""
 
 
@@ -49,7 +50,7 @@ async def call_vllm_inference(image_base64: str, ocr_context: str = "") -> str:
                     },
                     {
                         "type": "text",
-                        "text": "Trích xuất toàn bộ thông tin từ hóa đơn này theo JSON schema đã định nghĩa. Hãy kết hợp với kết quả OCR sơ bộ trong system prompt.",
+                        "text": "Analyze the attached document and perform structured extraction according to the schema. Utilize the preliminary OCR hints provided in the system context to refine your grounding and text recognition.",
                     },
                 ],
             },
