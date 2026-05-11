@@ -1,8 +1,9 @@
-# OCR Service specific files to ignore
+# --- OCR Service specific files ---
 ocr-service/sample_qwen3vl.py
 ocr-service/project_description.md
+ocr-service/test_*.py
 
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,20 +12,27 @@ venv/
 ENV/
 env/
 .env
+.env.*
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Environment
-.env
-.env.local
+# --- Environment ---
 .agents/
 
-
-# IDEs
+# --- IDEs ---
 .idea/
 .vscode/
+*.swp
+*.swo
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# Docker
+# --- Docker ---
 .docker_cache/
+.dockerignore
