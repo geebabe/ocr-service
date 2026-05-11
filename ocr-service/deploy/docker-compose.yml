@@ -11,30 +11,10 @@ services:
     environment:
       - VLLM_URL=http://qwen-model:8000/v1/chat/completions
       - VLLM_MODEL=${MODEL_ID:-Qwen/Qwen3-VL-2B-Instruct}
-      - PADDLEOCR_URL=http://paddleocr-service:8000/extract
+      - PADDLE_DEVICE=cpu
     depends_on:
       qwen-model:
         condition: service_healthy
-      paddleocr-service:
-        condition: service_healthy
-    networks:
-      - ocr-network
-
-  paddleocr-service:
-    build:
-      context: ../../paddleocr-service
-      dockerfile: ../ocr-service/deploy/Dockerfile.paddleocr
-    restart: unless-stopped
-    environment:
-      - OMP_NUM_THREADS=1
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    ports:
-      - "8002:8000"
     networks:
       - ocr-network
 

@@ -1,51 +1,102 @@
-import httpx
+import logging
+import os
+import base64
+import io
+import numpy as np
+from PIL import Image
+from paddleocr import PaddleOCR
 from app.core.config import settings
 from app.core.logger import logger
 from typing import List, Dict, Any
 
+# Suppress PaddleOCR logs
+os.environ["PADDLEOCR_LOG_LEVEL"] = "WARNING"
+logging.getLogger("ppocr").setLevel(logging.WARNING)
+
+# Initialize PaddleOCR engine
+# Note: In a production environment, you might want to initialize this 
+# inside the app startup event if you want to control when it loads.
+_ocr_engine = None
+
+def get_ocr_engine():
+    global _ocr_engine
+    if _ocr_engine is None:
+        logger.info(f"Initializing PaddleOCR engine on {settings.PADDLE_DEVICE}...")
+        _ocr_engine = PaddleOCR(
+            lang="vi",
+            ocr_version="PP-OCRv5",
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            device=settings.PADDLE_DEVICE,
+            text_rec_score_thresh=0.5,
+            show_log=False
+        )
+        logger.info("✅ OCR engine ready")
+    return _ocr_engine
+
 async def call_paddleocr(image_base64: str, img_w: int, img_h: int) -> str:
     """
-    Calls the PaddleOCR microservice, normalizes the bounding boxes to [0, 1000],
-    and formats the result as a text string to inject into the LLM prompt.
+    Runs PaddleOCR locally, normalizes the bounding boxes to [0, 1000],
+    and formats the result as a list of tuples to inject into the LLM prompt.
     """
-    payload = {"image_base64": image_base64}
-    
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(settings.PADDLEOCR_URL, json=payload)
-            response.raise_for_status()
+        # Decode base64 image
+        img_data = base64.b64decode(image_base64)
+        img = Image.open(io.BytesIO(img_data)).convert('RGB')
+        img_np = np.array(img)
+
+        # Get OCR engine
+        ocr = get_ocr_engine()
+        
+        # Standard PaddleOCR.ocr() returns: [ [ [box], (text, score) ], ... ]
+        # We'll adapt this to the structure the user wants
+        results = ocr.ocr(img_np, cls=False)
+        
+        if not results or not results[0]:
+            return "Không tìm thấy văn bản nào."
+
+        # Adapt to user's desired "rows" structure
+        rows = []
+        for i, line in enumerate(results[0]):
+            box = line[0] # [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
+            text, score = line[1]
             
-            results = response.json()
+            # Extract min/max and normalize to [0, 1000]
+            xs = [p[0] for p in box]
+            ys = [p[1] for p in box]
             
-            # Format and normalize coordinates
-            formatted_results = []
-            for item in results:
-                text = item.get("text", "")
-                bbox = item.get("bbox", [0, 0, 0, 0])
+            try:
+                xmin = int((min(xs) / img_w) * 1000)
+                ymin = int((min(ys) / img_h) * 1000)
+                xmax = int((max(xs) / img_w) * 1000)
+                ymax = int((max(ys) / img_h) * 1000)
                 
-                # Normalize bbox to [0, 1000] scale
-                # format: [xmin, ymin, xmax, ymax]
-                try:
-                    norm_bbox = [
-                        int((bbox[0] / img_w) * 1000),
-                        int((bbox[1] / img_h) * 1000),
-                        int((bbox[2] / img_w) * 1000),
-                        int((bbox[3] / img_h) * 1000)
-                    ]
-                    # Ensure within bounds
-                    norm_bbox = [max(0, min(1000, x)) for x in norm_bbox]
-                except ZeroDivisionError:
-                    norm_bbox = [0, 0, 0, 0]
+                # Ensure within bounds
+                xmin, ymin = max(0, min(1000, xmin)), max(0, min(1000, ymin))
+                xmax, ymax = max(0, min(1000, xmax)), max(0, min(1000, ymax))
+            except ZeroDivisionError:
+                xmin, ymin, xmax, ymax = 0, 0, 0, 0
                 
-                formatted_results.append(f'- Text: "{text}", BBox: {norm_bbox}')
-            
-            if not formatted_results:
-                return "Không tìm thấy văn bản nào."
-                
-            return "\n".join(formatted_results)
+            rows.append({
+                "#": i,
+                "text": text,
+                "score": round(float(score), 3),
+                "xmin": xmin,
+                "ymin": ymin,
+                "xmax": xmax,
+                "ymax": ymax
+            })
+
+        # Format rows into a list of tuples for the prompt
+        # Example: ('VĂN BẢN', [10, 20, 100, 50])
+        prompt_rows = [
+            str((r["text"], [r["xmin"], r["ymin"], r["xmax"], r["ymax"]]))
+            for r in rows
+        ]
+
+        return "\n".join(prompt_rows)
             
     except Exception as e:
-        logger.error(f"PaddleOCR API call failed: {str(e)}")
-        # We don't fail the whole request if OCR fails, we just return empty context
+        logger.error(f"PaddleOCR SDK execution failed: {str(e)}")
         return "Lỗi khi chạy OCR sơ bộ, hãy tự phân tích từ ảnh."
-
