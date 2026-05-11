@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+.dockerignore
+
+# IDEs
+.idea
+.vscode
+
+# Python
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+**/.venv
+venv
+env
+.env
+.env.*
+
+# Testing
+**/.pytest_cache
+**/tests
+
+# Project specific
+.agents
+ocr-service/sample_qwen3vl.py
+ocr-service/project_description.md
+ocr-service/test_*.py
+
+# OS files
+.DS_Store
+Thumbs.db
