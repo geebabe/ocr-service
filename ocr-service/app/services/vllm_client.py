@@ -12,11 +12,14 @@ QUAN TRỌNG ĐỂ KÍCH HOẠT NATIVE GROUNDING:
 - Trả về dưới dạng mảng 4 số nguyên [xmin, ymin, xmax, ymax].
 Chỉ trả về JSON thuần, không thêm giải thích hay markdown.
 
+Dưới đây là kết quả OCR sơ bộ của ảnh (đã chuẩn hóa tọa độ bbox [0, 1000]), bạn có thể sử dụng làm tham chiếu để đối chiếu nội dung và tọa độ:
+{ocr_context}
+
 JSON Schema:
 {schema_str}"""
 
 
-async def call_vllm_inference(image_base64: str) -> str:
+async def call_vllm_inference(image_base64: str, ocr_context: str = "") -> str:
     """
     Calls the vLLM server via HTTP asynchronously with guided JSON structured output.
     Uses InvoiceExtraction schema to enforce valid JSON structure from the model.
@@ -26,7 +29,7 @@ async def call_vllm_inference(image_base64: str) -> str:
     # Generate JSON schema from Pydantic model for guided decoding
     invoice_schema = InvoiceExtraction.model_json_schema()
     schema_str = json.dumps(invoice_schema, indent=2)
-    system_prompt = SYSTEM_PROMPT.format(schema_str=schema_str)
+    system_prompt = SYSTEM_PROMPT.format(schema_str=schema_str, ocr_context=ocr_context)
 
     payload = {
         "model": settings.VLLM_MODEL,
@@ -46,7 +49,7 @@ async def call_vllm_inference(image_base64: str) -> str:
                     },
                     {
                         "type": "text",
-                        "text": "Trích xuất toàn bộ thông tin từ hóa đơn này theo JSON schema đã định nghĩa.",
+                        "text": "Trích xuất toàn bộ thông tin từ hóa đơn này theo JSON schema đã định nghĩa. Hãy kết hợp với kết quả OCR sơ bộ trong system prompt.",
                     },
                 ],
             },

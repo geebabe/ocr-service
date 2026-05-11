@@ -28,3 +28,4 @@ Thumbs.db
 
 # Docker
 .docker_cache/
+paddleocr_sdk_vi.ipynb

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     VLLM_MAX_TOKENS: int = 8192
     VLLM_TEMPERATURE: float = 0.0
     
+    # PaddleOCR Service
+    PADDLEOCR_URL: str = "http://paddleocr-service:8000/extract"
+    
     # Upload Settings
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: set = {".pdf", ".jpg", ".jpeg", ".png"}
