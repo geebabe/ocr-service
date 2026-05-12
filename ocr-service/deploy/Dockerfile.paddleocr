@@ -3,11 +3,12 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Install system dependencies required by opencv, paddlepaddle and healthcheck (curl)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
+    mupdf mupdf-tools \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
-    curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
