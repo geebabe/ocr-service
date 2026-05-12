@@ -1,5 +1,13 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import paddle
+
+if paddle.is_compiled_with_cuda():
+    n = paddle.device.cuda.device_count()
+    print(f"GPU count   : {n}")
+    DEVICE = "gpu:0"
+else:
+    DEVICE = "cpu"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "OCR Inference Service"
@@ -12,7 +20,7 @@ class Settings(BaseSettings):
     VLLM_TEMPERATURE: float = 0.0
     
     # PaddleOCR Settings
-    PADDLE_DEVICE: str = "cpu"
+    PADDLE_DEVICE: str = DEVICE
     
     # Upload Settings
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB

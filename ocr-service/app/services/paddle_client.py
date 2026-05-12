@@ -51,7 +51,7 @@ async def call_paddleocr(image_base64: str, img_w: int, img_h: int) -> str:
         
         # Standard PaddleOCR.ocr() returns: [ [ [box], (text, score) ], ... ]
         # We'll adapt this to the structure the user wants
-        results = ocr.ocr(img_np, cls=False)
+        results = ocr.predict(img_np)
         
         if not results or not results[0]:
             return "Không tìm thấy văn bản nào."
